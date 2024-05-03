@@ -6,17 +6,13 @@ import { Issue } from "@prisma/client";
 import { Button, Callout, TextField } from "@radix-ui/themes";
 import axios from "axios";
 import "easymde/dist/easymde.min.css";
-import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
+import SimpleMDE from "react-simplemde-editor";
 
 type IssueFormData = z.infer<typeof issueSchema>;
-
-const SimpleMDE = dynamic(() => import("react-simplemde-editor"), {
-  ssr: false,
-});
 
 const IssueForm = ({ issue }: { issue?: Issue }) => {
   const {
@@ -34,9 +30,14 @@ const IssueForm = ({ issue }: { issue?: Issue }) => {
   const onSubmit = handleSubmit(async (data) => {
     try {
       setIsSubmiting(true);
-      await axios.post("/api/issues", data);
+      if (issue) {
+        await axios.patch(`/api/issues/${issue.id}`, data);
+      } else {
+        await axios.post("/api/issues", data);
+      }
       setIsSubmiting(false);
       router.push("/issues");
+      router.refresh();
     } catch (error) {
       setError("An unexpected error occurred.");
       setIsSubmiting(false);
@@ -77,7 +78,8 @@ const IssueForm = ({ issue }: { issue?: Issue }) => {
 
         <Button disabled={isSubmiting}>
           {" "}
-          Submit New Issue {isSubmiting && <Spinner />}
+          {issue ? "Update Issue" : "Submit New Issue"}{" "}
+          {isSubmiting && <Spinner />}
         </Button>
       </form>
     </div>
